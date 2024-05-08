@@ -1,0 +1,33 @@
+// This is your Prisma schema file,
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  email     String @unique
+  password  String
+  username  String
+}
+
+model DNSRecord {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  domain     String
+  type       String
+  value      String
+  ttl        Int
+  priority   Int?
+  weight     Int?
+  port       Int?
+  target     String?
+  keyTag     Int?
+  algorithm  Int?
+  digestType Int?
+  digest     String?
+}

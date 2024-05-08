@@ -1,5 +1,8 @@
-const { default: mongoose } = require("mongoose");
-const userModel = require("../model/Users");
+// const { default: mongoose } = require("mongoose");
+// const userModel = require("../model/Users");
+
+const { prisma } = require('../db');
+
 
 const {
   signToken,
@@ -28,12 +31,13 @@ exports.createSendToken = (user, res) => {
 };
 
 exports.signup = async (req, res) => {
-    const data = req.body
-    console.log(data);
+    const {username, email, password} = req.body
+
+    console.log(req.body);
     // Check for existing USer
-    const isUserExist = await userModel.find({
-        email: {$eq: "kyle"}
-    })
+    const isUserExist = await prisma.user.findUnique({
+        where: {email: email},
+    });
 
     if(isUserExist){
         return res.status(400).json({
@@ -47,9 +51,18 @@ exports.signup = async (req, res) => {
     // Create user and push into DB
 
     try{
-        const user = await userModel.create({
-            username, email, password: cryptPassword
-        })
+        const user = await prisma.user.create({
+            data: {
+              email: email,
+              password: cryptPassword,
+              username: username
+            },
+            select: {
+              id: true,
+              email: true,
+              username: true
+            },
+          });
 
         // generate access token
         const accesstoken = this.createSendToken(user, res);
@@ -60,15 +73,20 @@ exports.signup = async (req, res) => {
             data: user,
             accesstoken
         });
-    }catch(error){
+
+    } catch(error){
         res.status(500).json({
-            message: `Error: ${error.meesage}`
+            message: `Error: ${error.message}`
         })
     }
 };
 
 exports.login = async (req, res) => {
+
+    console.log(req.body
+    );
   res.status(200).json({
     message: "Hello from /login",
+    body: req.body  
   });
 };

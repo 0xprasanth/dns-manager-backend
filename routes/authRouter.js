@@ -7,9 +7,8 @@ const router = express.Router();
 /** routes */
 
 // signup 
-router.post("/signup", authController.signup)
-
-// login
-router.post("/login", authController.login)
+router
+    .post("/signup", authController.signup)
+    .post("/login", authController.login)
 
 module.exports = router;

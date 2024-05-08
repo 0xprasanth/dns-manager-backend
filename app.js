@@ -3,11 +3,11 @@ const express = require('express')
 const cors = require('cors')
 const cookieParser = require('cookie-parser')
 const authRouter = require('./routes/authRouter')
-const mongoose = require('mongoose')
+const bodyParser = require('body-parser')
 require('dotenv').config({path: './.env'});
 
 /** DB connections */
-mongoose.connect(process.env.DB_URL);
+// mongoose.connect(process.env.DB_URL);
 
 
 const app = express();
@@ -17,6 +17,7 @@ app.use(cors())
 // app.use(dotenv());
 app.use(cookieParser())
 app.disable("x-powered-by")
+app.use(bodyParser.json())
 
 /**
  * api routes

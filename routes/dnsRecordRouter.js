@@ -11,6 +11,6 @@ router
     .post("/", dnsController.createRecord)
     .get("/", dnsController.getRecords);
 
-router.post("/bulk", dnsController.createBulkRecords);
+// router.post("/bulk", dnsController.createBulkRecords);
 
 module.exports = router;

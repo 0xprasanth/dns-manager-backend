@@ -1,6 +1,3 @@
-/**
- * services/awsRoute53.js
- */
 const {
   Route53Client,
   ChangeResourceRecordSetsCommand,
@@ -14,14 +11,10 @@ exports.client = new Route53Client({
   region: process.env.AWS_REGION,
 });
 
-// Prepares the record ready to push
 exports.prepareRecord = (record) => {
   let resourceRecords;
   let recordName = `${record.domain}`;
 
-  /**
-   * TODO: refactor with more simple approach.
-   */
   if (record.type === "MX") {
     resourceRecords = [{ Value: `${record.priority} ${record.value}` }];
   } else if (record.type === "SRV") {
@@ -48,82 +41,12 @@ exports.prepareRecord = (record) => {
   return { resourceRecords, recordName };
 };
 
-
-
-exports.getHostedZoneId = async (dnsName, maxItems) => {
-  const params = {
-    DNSName: dnsName,
-    maxItems: maxItems,
-  };
-
-  try {
-    const command = new ListHostedZonesByNameCommand(params);
-
-    const reponse = await this.client.send(command);
-
-    if (
-      reponse.HostedZones.length > 0 &&
-      reponse.HostedZones[0].Name === dnsName
-    ) {
-      return reponse.HostedZones[0].Id.split("/").pop();
-    } else {
-      throw new Error(`NO hosted Zone found with the DNS Name: ${dnsName}`);
-    }
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-exports.createHostedZone = async (hostedZoneData) => {
-  const {
-    name,
-    // vpcId,
-    // vpcRegion,
-    // callerReference,
-    // delegationSetId,
-  } = hostedZoneData;
-
-  const params = {
-    Name: name,
-    // VPC: {
-    //   VPCRegion: vpcRegion,
-    //   VPCId: vpcId,
-    // },
-    CallerReference: new Date().getTime().toString(),
-    // DelegationSetId: delegationSetId,
-  };
-
-  const command = new CreateHostedZoneCommand(params);
-  // console.log(command);
-  const respone = await this.client.send(command);
-  // console.log(respone);
-  return respone  
-};
-
-exports.CreateHostedZoneAndRecord = async (hostedZoneData, recordData) => {
-  const hostedZone = await this.createHostedZone(hostedZoneData);
-
-  const hostedZoneId = hostedZone.HostedZone.Id.split("/").pop();
-  
-  console.log(hostedZone);
-
-  const recordParams = {
-    ...recordData,
-    HostedZoneId: hostedZoneId,
-  };
-
-  return await this.createRoute53Record(recordParams);
-};
-
-/**
- * Logic for CRUD on records
- */
 exports.createRoute53Record = async (recordParams) => {
   const { resourceRecords, recordName } = this.prepareRecord(recordParams);
 
   const params = {
     HostedZoneId: recordParams.HostedZoneId,
-    changeBatch: {
+    ChangeBatch: {
       Changes: [
         {
           Action: "CREATE",
@@ -138,9 +61,59 @@ exports.createRoute53Record = async (recordParams) => {
     },
   };
 
-  // send params and prepared record to AWS Route53 API
   const command = new ChangeResourceRecordSetsCommand(params);
+  return await this.client.send(command);
+};
 
+exports.deleteRoute53Record = async (record) => {
+  const { resourceRecords, recordName } = this.prepareRecord(record);
+
+  const hostedZoneId = await this.getHostedZoneId(recordName, 1);
+
+  const params = {
+    HostedZoneId: hostedZoneId,
+    ChangeBatch: {
+      Changes: [
+        {
+          Action: "DELETE",
+          ResourceRecordSet: {
+            Name: recordName,
+            Type: record.type,
+            TTL: parseInt(record.ttl),
+            ResourceRecords: resourceRecords,
+          },
+        },
+      ],
+    },
+  };
+
+  const command = new ChangeResourceRecordSetsCommand(params);
+  return await this.client.send(command);
+};
+
+exports.updateRoute53Record = async (record) => {
+  const { resourceRecords, recordName } = this.prepareRecord(record);
+
+  const hostedZoneId = await this.getHostedZoneId(recordName, 1);
+
+  const params = {
+    HostedZoneId: hostedZoneId,
+    ChangeBatch: {
+      Changes: [
+        {
+          Action: "UPSERT",
+          ResourceRecordSet: {
+            Name: recordName,
+            Type: record.type,
+            TTL: parseInt(record.ttl),
+            ResourceRecords: resourceRecords,
+          },
+        },
+      ],
+    },
+  };
+
+  const command = new ChangeResourceRecordSetsCommand(params);
   return await this.client.send(command);
 };
 
@@ -170,56 +143,61 @@ exports.createRoute53BulkRecord = async (records) => {
   return await this.client.send(command);
 };
 
-exports.updateRoute53Record = async (req, res) => {
-  const { resourceRecords, recordName } = this.prepareRecord(record);
-
-  const hostedZoneId = await this.getHostedZoneId(recordName, 1);
-
+exports.getHostedZoneId = async (dnsName, maxItems) => {
   const params = {
-    HostedZoneId: hostedZoneId,
-    ChangeBatch: {
-      Changes: [
-        {
-          Action: "UPSERT",
-          ResourceRecordSet: {
-            Name: recordName,
-            Type: record.type,
-            TTL: parseInt(record.ttl),
-            ResourceRecords: resourceRecords,
-          },
-        },
-      ],
-    },
+    DNSName: dnsName,
+    MaxItems: maxItems,
   };
 
-  // change result
-  const command = new ChangeResourceRecordSetsCommand(params);
+  try {
+    const command = new ListHostedZonesByNameCommand(params);
+    const response = await this.client.send(command);
+
+    if (
+      response.HostedZones.length > 0 &&
+      response.HostedZones[0].Name === `${dnsName}.`
+    ) {
+      return response.HostedZones[0].Id.split("/").pop();
+    } else {
+      throw new Error(`No hosted zone found with the DNS name: ${dnsName}`);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+exports.createHostedZone = async (hostedZoneData) => {
+  const {
+    name,
+    // vpcId,
+    // vpcRegion,
+    // callerReference,
+
+    delegationSetId,
+  } = hostedZoneData;
+
+  const params = {
+    Name: name,
+    // VPC: {
+    //   VPCRegion: vpcRegion,
+    //   VPCId: vpcId,
+    // },
+    CallerReference: new Date().getTime().toString(),
+    DelegationSetId: delegationSetId,
+  };
+  const command = new CreateHostedZoneCommand(params);
+
   return await this.client.send(command);
 };
 
-// delete record
-exports.deleteRoute53Record = async (record) => {
-  const { resourceRecords, recordName } = this.prepareRecord(record);
+exports.createHostedZoneAndRecord = async (hostedZoneData, recordData) => {
+  const hostedZone = await this.createHostedZone(hostedZoneData);
+  const hostedZoneId = hostedZone.HostedZone.Id.split("/").pop();
 
-  const hostedZoneId = await this.getHostedZoneId(recordName, 1);
-
-  const params = {
+  const recordParams = {
+    ...recordData,
     HostedZoneId: hostedZoneId,
-    ChangeBatch: {
-      Changes: [
-        {
-          Action: "DELETE",
-          ResourceRecordSet: {
-            Name: recordName,
-            Type: record.type,
-            TTL: parseInt(record.ttl),
-            ResourceRecords: resourceRecords,
-          },
-        },
-      ],
-    },
   };
 
-  const command = new ChangeResourceRecordSetsCommand(params);
-  return await this.client.send(command);
+  return await this.createRoute53Record(recordParams);
 };

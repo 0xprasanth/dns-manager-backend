@@ -7,7 +7,6 @@ const {
   CreateHostedZoneCommand,
   ListHostedZonesByNameCommand,
 } = require("@aws-sdk/client-route-53");
-const { resource } = require("../app");
 
 exports.client = new Route53Client({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -81,8 +80,7 @@ exports.createHostedZone = async (hostedZoneData) => {
     // vpcId,
     // vpcRegion,
     // callerReference,
-
-    delegationSetId,
+    // delegationSetId,
   } = hostedZoneData;
 
   const params = {
@@ -92,17 +90,22 @@ exports.createHostedZone = async (hostedZoneData) => {
     //   VPCId: vpcId,
     // },
     CallerReference: new Date().getTime().toString(),
-    DelegationSetId: delegationSetId,
+    // DelegationSetId: delegationSetId,
   };
-  const command = new CreateHostedZoneCommand(params);
 
-  return await this.client.send(command);
+  const command = new CreateHostedZoneCommand(params);
+  // console.log(command);
+  const respone = await this.client.send(command);
+  // console.log(respone);
+  return respone  
 };
 
 exports.CreateHostedZoneAndRecord = async (hostedZoneData, recordData) => {
   const hostedZone = await this.createHostedZone(hostedZoneData);
 
   const hostedZoneId = hostedZone.HostedZone.Id.split("/").pop();
+  
+  console.log(hostedZone);
 
   const recordParams = {
     ...recordData,

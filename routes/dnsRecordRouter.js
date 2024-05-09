@@ -11,6 +11,12 @@ router
     .post("/", dnsController.createRecord)
     .get("/", dnsController.getRecords);
 
-// router.post("/bulk", dnsController.createBulkRecords);
+router.post("/bulk", dnsController.createBulkRecords);
+
+// Routes for update and delete DNS record
+router
+    .put("/:recordId", dnsController.updateRecord)
+    .delete(":/recordId", dnsController.deleteRecord)
+    
 
 module.exports = router;

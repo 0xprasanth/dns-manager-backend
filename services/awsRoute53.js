@@ -49,30 +49,30 @@ exports.prepareRecord = (record) => {
   return { resourceRecords, recordName };
 };
 
-exports.createRoute53Record = async (recordParams) => {
-  const { resourceRecords, recordName } = this.prepareRecord(recordParams);
 
+
+exports.getHostedZoneId = async (dnsName, maxItems) => {
   const params = {
-    HostedZoneId: recordParams.HostedZoneId,
-    changeBatch: {
-      Changes: [
-        {
-          Action: "CREATE",
-          ResourceRecordSet: {
-            Name: recordName,
-            Type: recordParams.type,
-            TTL: parseInt(recordParams.ttl),
-            ResourceRecords: resourceRecords,
-          },
-        },
-      ],
-    },
+    DNSName: dnsName,
+    maxItems: maxItems,
   };
 
-  // send params and prepared record to AWS Route53 API
-  const command = new ChangeResourceRecordSetsCommand(params);
+  try {
+    const command = new ListHostedZonesByNameCommand(params);
 
-  return await this.client.send(command);
+    const reponse = await this.client.send(command);
+
+    if (
+      reponse.HostedZones.length > 0 &&
+      reponse.HostedZones[0].Name === dnsName
+    ) {
+      return reponse.HostedZones[0].Id.split("/").pop();
+    } else {
+      throw new Error(`NO hosted Zone found with the DNS Name: ${dnsName}`);
+    }
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 exports.createHostedZone = async (hostedZoneData) => {
@@ -110,4 +110,113 @@ exports.CreateHostedZoneAndRecord = async (hostedZoneData, recordData) => {
   };
 
   return await this.createRoute53Record(recordParams);
+};
+
+/**
+ * Logic for CRUD on records
+ */
+exports.createRoute53Record = async (recordParams) => {
+  const { resourceRecords, recordName } = this.prepareRecord(recordParams);
+
+  const params = {
+    HostedZoneId: recordParams.HostedZoneId,
+    changeBatch: {
+      Changes: [
+        {
+          Action: "CREATE",
+          ResourceRecordSet: {
+            Name: recordName,
+            Type: recordParams.type,
+            TTL: parseInt(recordParams.ttl),
+            ResourceRecords: resourceRecords,
+          },
+        },
+      ],
+    },
+  };
+
+  // send params and prepared record to AWS Route53 API
+  const command = new ChangeResourceRecordSetsCommand(params);
+
+  return await this.client.send(command);
+};
+
+exports.createRoute53BulkRecord = async (records) => {
+  const changes = records.map((record) => {
+    const { resourceRecords, recordName } = this.prepareRecord(record);
+
+    return {
+      Action: "CREATE",
+      ResourceRecordSet: {
+        Name: recordName,
+        Type: record.type,
+        TTL: parseInt(record.ttl),
+        ResourceRecords: resourceRecords,
+      },
+    };
+  });
+
+  const params = {
+    HostedZoneId: process.env.HOSTED_ZONE_ID,
+    ChangeBatch: {
+      Changes: changes,
+    },
+  };
+
+  const command = new ChangeResourceRecordSetsCommand(params);
+  return await this.client.send(command);
+};
+
+exports.updateRoute53Record = async (req, res) => {
+  const { resourceRecords, recordName } = this.prepareRecord(record);
+
+  const hostedZoneId = await this.getHostedZoneId(recordName, 1);
+
+  const params = {
+    HostedZoneId: hostedZoneId,
+    ChangeBatch: {
+      Changes: [
+        {
+          Action: "UPSERT",
+          ResourceRecordSet: {
+            Name: recordName,
+            Type: record.type,
+            TTL: parseInt(record.ttl),
+            ResourceRecords: resourceRecords,
+          },
+        },
+      ],
+    },
+  };
+
+  // change result
+  const command = new ChangeResourceRecordSetsCommand(params);
+  return await this.client.send(command);
+};
+
+// delete record
+exports.deleteRoute53Record = async (record) => {
+  const { resourceRecords, recordName } = this.prepareRecord(record);
+
+  const hostedZoneId = await this.getHostedZoneId(recordName, 1);
+
+  const params = {
+    HostedZoneId: hostedZoneId,
+    ChangeBatch: {
+      Changes: [
+        {
+          Action: "DELETE",
+          ResourceRecordSet: {
+            Name: recordName,
+            Type: record.type,
+            TTL: parseInt(record.ttl),
+            ResourceRecords: resourceRecords,
+          },
+        },
+      ],
+    },
+  };
+
+  const command = new ChangeResourceRecordSetsCommand(params);
+  return await this.client.send(command);
 };

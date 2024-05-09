@@ -10,6 +10,8 @@ const {
     
 } = require('../services/awsRoute53')
 
+
+/** function to create record */
 exports.createRecord = async (req, res) => {
     const {
         hostedZoneData, 
@@ -40,6 +42,21 @@ exports.createRecord = async (req, res) => {
         res.status(500).json({
             message: 'Error',
             data: err.message
+        })
+    }
+}
+
+
+/** function to create bulk records */
+exports.createBulkRecords = async (req, res) => {
+    const { records } = req.body;
+
+    try{
+        // const awsResponse = await 
+    }catch(err){
+        res.status(500).json({
+            status: "Error", 
+            message: err.message
         })
     }
 }

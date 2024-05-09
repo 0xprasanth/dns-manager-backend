@@ -7,9 +7,7 @@ const dnsController = require("../controller/dnsController");
 /**
  * Router to create a DNS Record
  */
-router
-    .post("/", dnsController.createRecord)
-    .get("/", dnsController.getRecords);
+router.post("/", dnsController.createRecord).get("/", dnsController.getRecords);
 
 router.post("/bulk", dnsController.createBulkRecords);
 

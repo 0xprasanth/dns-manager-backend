@@ -87,7 +87,8 @@ exports.getRecords = async (req, res) => {
 
 
       const dnsRecords = await prisma.dNSRecord.findMany();
-  
+        
+      
       res.status(200).json({ message: "success", data: dnsRecords });
     } catch (error) {
       res.status(500).json({ message: error.message });

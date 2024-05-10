@@ -1,5 +1,5 @@
-// const { default: mongoose } = require("mongoose");
-// const userModel = require("../model/Users");
+const { default: mongoose } = require("mongoose");
+const userModel = require("../model/Users");
 
 const { prisma } = require("../db");
 
@@ -79,17 +79,24 @@ exports.signup = async (req, res) => {
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
+
+  // connect mongoose
+  mongoose.connect(process.env.DATABASE_URL, { useNewUrlParser: true });
+
   console.log('given', email  );
-  
+
   if (!email || !password) {
     return res
       .status(400)
       .json({ status: 400, message: "Please provide a email and password" });
   }
 
-  const muser = await prisma.user.findUnique({
-    where: { email: email },
-  });
+  const muser = userModel.findOne({
+    email: email
+  })
+  // const muser = await prisma.user.findUnique({
+  //   where: { email: email },
+  // });
 
   // if user not found
   if (!muser) {

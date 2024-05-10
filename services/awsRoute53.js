@@ -88,6 +88,7 @@ exports.deleteRoute53Record = async (record) => {
   };
 
   const command = new ChangeResourceRecordSetsCommand(params);
+  
   return await this.client.send(command);
 };
 

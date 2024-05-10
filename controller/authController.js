@@ -85,12 +85,12 @@ exports.login = async (req, res) => {
       .json({ status: 400, message: "Please provide a email and password" });
   }
 
-  const user = await prisma.user.findUnique({
+  const muser = await prisma.user.findUnique({
     where: { email: email },
   });
 
   // if user not found
-  if (!user) {
+  if (!muser) {
     return res.status(401).json({
         status: 401,
         message: "Email ID does not exist. Please check again"
@@ -98,7 +98,7 @@ exports.login = async (req, res) => {
   }
   
   //validate passwd
-  const passwordMatch = await validatePassword(password, user.password);
+  const passwordMatch = await validatePassword(password, muser.password);
 
   if (!passwordMatch) {
     return res
@@ -108,12 +108,12 @@ exports.login = async (req, res) => {
 
   const accesstoken = this.createSendToken(user, res);
   //eliminate the password field!!
-  user.password = undefined;
+  museruser.password = undefined;
 
   res.status(200).json({
     message: "success",
     accesstoken,
-    data: user,
+    data: muser,
   });
 
 };

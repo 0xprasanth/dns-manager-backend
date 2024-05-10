@@ -14,7 +14,9 @@ require('dotenv').config({path: './.env'});
 const app = express();
 
 // middlewares
-app.use(cors())
+app.use(cors({
+    origin: true
+}))
 // app.use(dotenv());
 app.use(cookieParser())
 app.disable("x-powered-by")
@@ -29,6 +31,13 @@ app.get('/api/test', (req, res) => {
     });
 
 })
+
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+  });
+  
 
 app.use('/api/v1', authRouter);
 

@@ -70,6 +70,11 @@ exports.deleteRoute53Record = async (record) => {
 
   const hostedZoneId = await this.getHostedZoneId(recordName, 1);
 
+  if(hostedZoneId.status === "error"){
+    console.log(hostedZoneId.message);
+    return hostedZoneId.message
+  }
+
   const params = {
     HostedZoneId: hostedZoneId,
     ChangeBatch: {
@@ -88,7 +93,7 @@ exports.deleteRoute53Record = async (record) => {
   };
 
   const command = new ChangeResourceRecordSetsCommand(params);
-  
+
   return await this.client.send(command);
 };
 
@@ -164,6 +169,10 @@ exports.getHostedZoneId = async (dnsName, maxItems) => {
     }
   } catch (error) {
     console.error(error);
+    return {
+      status: "error",
+      message: error.message
+    }
   }
 };
 

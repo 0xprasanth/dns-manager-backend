@@ -3,6 +3,7 @@ const {
   ChangeResourceRecordSetsCommand,
   CreateHostedZoneCommand,
   ListHostedZonesByNameCommand,
+  ListHostedZonesCommand,
 } = require("@aws-sdk/client-route-53");
 
 exports.client = new Route53Client({
@@ -175,6 +176,14 @@ exports.getHostedZoneId = async (dnsName, maxItems) => {
     }
   }
 };
+
+exports.getHostedZones = async () => {
+  try{
+    // const command = new ListHostedZonesCommand()
+  }catch(err){
+    console.log(err);
+  }
+}
 
 exports.createHostedZone = async (hostedZoneData) => {
   const {

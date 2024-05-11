@@ -44,7 +44,7 @@ exports.createRecordFromId = async (req, res) => {
 
       // insert record in DB;
       const { resourceRecords, recordName } = prepareRecord(record);
-      
+
       const newRecord = await dnsModal.create({
         hostedZoneId: hostedZoneId,
         domain: recordName,
@@ -92,13 +92,29 @@ exports.createHostedZoneOnly = async (req, res) => {
         success: false,
         message: "User does not exists",
       });
+    } else if(isUser.HostedZoneId){
+      res.status(200).send({
+        success: false,
+        message: "HostedZone already exists",
+      });
     } else {
+      // console.log('else 96', isUser);
+
       const response = await createHostedZoneForClient(hostedZoneData);
 
       // create record
       const db = await dnsModal.create({
         hostedZoneId: response,
         domain: hostedZoneData.name,
+        type: "NS",
+        ttl: 17800,
+        ResourceRecords: {
+          Value: ["ns-896.awsdns-48.net.",
+            "ns-1190.awsdns-20.org.",
+            "ns-439.awsdns-54.com.",
+           " ns-1972.awsdns-54.co.uk."
+          ]
+        }
       });
 
       // const user = await userModal.findOneAndUpdate(
@@ -219,7 +235,9 @@ exports.getRecords = async (req, res) => {
   // Implementation logic to get DNS records
   const { userId } = req.body;
   try {
-    const dnsRecords = await userModal.where("_id").equals(userId);
+    const user = await userModal.where("_id").equals(userId);
+
+    const dnsRecords = await dnsModal.where("HostedZoneId").equals(user.HostedZoneId)
 
     console.log("211 getRecords", dnsRecords);
 

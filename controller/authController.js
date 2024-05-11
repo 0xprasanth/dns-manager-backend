@@ -33,32 +33,37 @@ exports.signup = async (req, res) => {
   const { username, email, password } = req.body;
 
   // Check for existing USer
-  const isUserExist = await prisma.user.findUnique({
-    where: { email: email },
-  });
+  // const isUserExist = await prisma.user.findUnique({
+  //   where: { email: email },
+  // });
 
-  if (isUserExist) {
-    return res.status(400).json({
-      meesage: `User with ${email} already exist`,
-    });
-  }
+  // if (isUserExist) {
+  //   return res.status(400).json({
+  //     meesage: `User with ${email} already exist`,
+  //   });
+  // }
 
   // if it is new user, hash password and insert into DB
-  const cryptPassword = await hashedPassword(password);
 
   // Create user and push into DB
   try {
-    const createUser = await prisma.user.create({
-      data: {
-        email: email,
-        password: cryptPassword,
-        username: username,
-      },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-      },
+    const cryptPassword = await hashedPassword(password);
+    // const createUser = await prisma.user.create({
+    //   data: {
+    //     email: email,
+    //     password: cryptPassword,
+    //     username: username,
+    //   },
+    //   select: {
+    //     id: true,
+    //     email: true,
+    //     username: true,
+    //   },
+    // });
+    const createUser = await userModel.create({
+      username: username,
+      email: email,
+      password: cryptPassword,
     });
 
     // generate access token
@@ -71,8 +76,9 @@ exports.signup = async (req, res) => {
       accesstoken,
     });
   } catch (error) {
+    console.log(`Error: ${error.message}`);
     res.status(500).json({
-      message: `Error: ${error.message}`,
+      message: `E11000: User with ${email} already exist`,
     });
   }
 };
@@ -80,10 +86,7 @@ exports.signup = async (req, res) => {
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
-  // connect mongoose
-  mongoose.connect(process.env.DATABASE_URL, { useNewUrlParser: true });
-
-  console.log('given', email  );
+  console.log("given", email);
 
   if (!email || !password) {
     return res
@@ -91,38 +94,46 @@ exports.login = async (req, res) => {
       .json({ status: 400, message: "Please provide a email and password" });
   }
 
-  const muser = userModel.findOne({
-    email: email
-  })
   // const muser = await prisma.user.findUnique({
   //   where: { email: email },
   // });
 
-  // if user not found
-  if (!muser) {
-    return res.status(401).json({
+  try {
+    // if user not found
+    const user = await userModel.findOne({
+      email: email
+    })
+
+    if (!user) {
+      return res.status(401).json({
         status: 401,
-        message: "Email ID does not exist. Please check again"
+        message: "Email ID does not exist. Please check again",
+      });
+    }
+
+    //validate passwd
+    const passwordMatch = await validatePassword(password, user.password);
+
+    if (!passwordMatch) {
+      return res
+        .status(401)
+        .json({ status: 401, message: "Invalid password. Check again!" });
+    }
+
+    const accesstoken = this.createSendToken(user, res);
+    //eliminate the password field!!
+    user.password = undefined;
+
+    res.status(200).json({
+      message: "success",
+      accesstoken,
+      data: user,
+    });
+
+  } catch (error) {
+    console.log(`Error: ${error}`);
+    res.status(500).json({
+      message: ``,
     });
   }
-  
-  //validate passwd
-  const passwordMatch = await validatePassword(password, muser.password);
-
-  if (!passwordMatch) {
-    return res
-      .status(401)
-      .json({ status: 401, message: "Invalid password. Check again!" });
-  }
-
-  const accesstoken = this.createSendToken(user, res);
-  //eliminate the password field!!
-  museruser.password = undefined;
-
-  res.status(200).json({
-    message: "success",
-    accesstoken,
-    data: muser,
-  });
-
 };

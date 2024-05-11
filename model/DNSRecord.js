@@ -2,5 +2,5 @@
 const mongoose = require('mongoose')
 
 const DNSRecordSchema = new mongoose.Schema({
-    id: String 
+    id: _id
 })

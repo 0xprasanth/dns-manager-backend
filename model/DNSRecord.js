@@ -7,6 +7,9 @@ const DNSRecordSchema = new mongoose.Schema({
     type: { type: String, required: true},
     value: { type: String, required: true},
     ttl: { type: Number, required: true},
+    ResoureRecords: {
+        type: [String],
+    },
     priority: Number,
     wieght: Number,
     port: Number,

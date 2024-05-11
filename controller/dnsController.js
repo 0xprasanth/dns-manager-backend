@@ -11,7 +11,8 @@ const {
   deleteRoute53Record,
   createRoute53BulkRecord,
 } = require("../services/awsRoute53");
-const dnsModal = require('../model/DNSRecord')
+const dnsModal = require('../model/DNSRecord');
+const { getHostedZones } = require("../services/route53HostedZones");
 
 /** function to create record */
 exports.createRecord = async (req, res) => {
@@ -90,7 +91,6 @@ exports.createBulkRecords = async (req, res) => {
 exports.getRecords = async (req, res) => {
   // Implementation logic to get DNS records
   try {
-    
     const dnsRecords = await dnsModal.find()
 
     res

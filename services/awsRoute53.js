@@ -177,13 +177,7 @@ exports.getHostedZoneId = async (dnsName, maxItems) => {
   }
 };
 
-exports.getHostedZones = async () => {
-  try{
-    // const command = new ListHostedZonesCommand()
-  }catch(err){
-    console.log(err);
-  }
-}
+
 
 exports.createHostedZone = async (hostedZoneData) => {
   const {

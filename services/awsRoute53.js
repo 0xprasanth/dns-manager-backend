@@ -218,6 +218,22 @@ exports.createHostedZone = async (hostedZoneData) => {
   return await this.client.send(command);
 };
 
+exports.createHostedZoneForClient = async (hostedZoneData) => {
+
+  try {
+    const hostedZone = await this.createHostedZone(hostedZoneData)
+
+    const hostedZoneId = hostedZone.HostedZone.Id.split("/").pop();
+
+    return hostedZoneId;
+
+  } catch (error) {
+    console.log('achzfc 228', error);
+    return error.message
+    
+  }
+
+}
 exports.createRoute53RecordFromId = async (hostedZoneId, recordData) => {
 
   // check for hosted zone

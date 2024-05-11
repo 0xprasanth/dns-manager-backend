@@ -63,11 +63,13 @@ exports.signup = async (req, res) => {
     const createUser = await userModel.create({
       username: username,
       email: email,
-      password: cryptPassword,
+      password: cryptPassword
     });
 
     // generate access token
     const accesstoken = this.createSendToken(createUser, res);
+
+    createUser.password = undefined;
 
     // if success
     res.status(201).json({
@@ -78,7 +80,7 @@ exports.signup = async (req, res) => {
   } catch (error) {
     console.log(`Error: ${error.message}`);
     res.status(500).json({
-      message: `E11000: User with ${email} already exist`,
+      message: error.message,
     });
   }
 };

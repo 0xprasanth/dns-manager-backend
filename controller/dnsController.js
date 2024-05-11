@@ -11,10 +11,11 @@ const {
   deleteRoute53Record,
   createRoute53BulkRecord,
   createRoute53RecordFromId,
-  prepareRecord
+  prepareRecord,
+  createHostedZoneForClient,
 } = require("../services/awsRoute53");
 const dnsModal = require("../model/DNSRecord");
-const { getHostedZones } = require("../services/route53HostedZones");
+const userModal = require("../model/Users");
 
 exports.createRecordFromId = async (req, res) => {
   /**
@@ -23,37 +24,48 @@ exports.createRecordFromId = async (req, res) => {
   // console.log('body', req.body);
   const { record, hostedZoneId } = req.body;
 
-  console.log(record);
-  console.log(hostedZoneId);
+  // console.log(record);
+  // console.log(hostedZoneId);
 
   try {
-    // call create record from HostedZone Id
-    const response = await createRoute53RecordFromId(hostedZoneId, record)
+    // check if domain of same exists
+    const dns = await dnsModal
+      .where("domain")
+      .equals(record.domain)
+      .where("type")
+      .equals(record.type);
 
-    // insert record in DB;
-    const { resourceRecords, recordName } = prepareRecord(record);
+    if (dns.length >= 1) {
+      throw new Error("duplicte")
+    } else {
+      console.log("send to aws");
+      // call create record from HostedZone Id
+      const response = await createRoute53RecordFromId(hostedZoneId, record);
 
-    const newRecord = await dnsModal.create({
-      domain: recordName,
-      type: record.type,
-      ttl: parseInt(record.ttl),
-      value: record.value,
-      ResoureRecords: resourceRecords,
-      hostedZoneId: hostedZoneId,
-    })
-
-    if(response.status === 400){
-      throw new Error(response.message);
-    }else{
-      res.json({
-        status: response.status,
-        message: response.message,
-        data: newRecord,
+      // insert record in DB;
+      const { resourceRecords, recordName } = prepareRecord(record);
+      
+      const newRecord = await dnsModal.create({
+        hostedZoneId: hostedZoneId,
+        domain: recordName,
+        type: record.type,
+        ttl: parseInt(record.ttl),
+        value: record.value,
+        ResourceRecords: resourceRecords[0]
       });
-    }
 
+      if (response.status === 400) {
+        throw new Error(response.message);
+      } else {
+        res.json({
+          status: response.status,
+          message: response.message,
+          data: newRecord,
+        });
+      }
+    }
   } catch (err) {
-    console.log('crfid 52',err);
+    console.log("crfid 52", err);
     res.json({
       status: 400,
       message: err.message,
@@ -61,6 +73,66 @@ exports.createRecordFromId = async (req, res) => {
   }
 };
 
+exports.createHostedZoneOnly = async (req, res) => {
+  const { hostedZoneData } = req.body;
+  const { userId } = req.params;
+
+  try {
+    // check if hostedzone already exists
+
+    // check if such user exist
+    const isUser = await userModal.findOne({ _id: userId });
+
+    // check if domain already exist
+    // const isDomain = await
+
+    if (!isUser) {
+      // isUser = false
+      res.status(200).send({
+        success: false,
+        message: "User does not exists",
+      });
+    } else {
+      const response = await createHostedZoneForClient(hostedZoneData);
+
+      // create record
+      const db = await dnsModal.create({
+        hostedZoneId: response,
+        domain: hostedZoneData.name,
+      });
+
+      // const user = await userModal.findOneAndUpdate(
+      //   {
+      //     _id: userId
+      //   },
+      //   {
+      //     dns: db._id
+      //   }
+      // )
+
+      // use save()
+
+      isUser.HostedZoneId = db.hostedZoneId;
+      const user = await isUser.save();
+
+      // console.log("log 82 user", user);
+      // console.log("log 82 db", db);
+      // console.log("log 82 user", isUser);
+      // console.log("log 82 user save", user);
+
+      res.status(200).send({
+        success: true,
+        message: "HostedZone Created",
+        user: user,
+      });
+    }
+  } catch (error) {
+    console.log("dc chzo: 89", error);
+    res.json({
+      message: error.message,
+    });
+  }
+};
 /** function to create record */
 exports.createRecord = async (req, res) => {
   /**
@@ -145,12 +217,15 @@ exports.createBulkRecords = async (req, res) => {
 // Function to get DNS records for a domain
 exports.getRecords = async (req, res) => {
   // Implementation logic to get DNS records
+  const { userId } = req.body;
   try {
-    const dnsRecords = await dnsModal.find();
+    const dnsRecords = await userModal.where("_id").equals(userId);
+
+    console.log("211 getRecords", dnsRecords);
 
     res.status(200).json({ message: "success", data: dnsRecords });
   } catch (error) {
-    console.log(error);
+    console.log("dc 215", error);
     res.status(500).json({ message: error.message });
   }
 };

@@ -9,6 +9,8 @@ const dnsController = require("../controller/dnsController");
  */
 router.post("/", dnsController.createRecord).get("/", dnsController.getRecords);
 
+router.post('/create-record', dnsController.createRecordFromId)
+
 router.post("/bulk", dnsController.createBulkRecords);
 
 // Routes for update and delete DNS record

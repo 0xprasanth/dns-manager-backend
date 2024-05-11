@@ -63,10 +63,23 @@ exports.createRoute53Record = async (recordParams) => {
   };
 
   const command = new ChangeResourceRecordSetsCommand(params);
-  return await this.client.send(command);
+  try {
+    const resp = await this.client.send(command);
+    console.log('crr 68',resp);
+    return resp;
+  } catch (error) {
+    console.log('crr 68', error);
+    return {
+      status: 400,
+      message: error.message
+    }
+
+  }
+
 };
 
 exports.deleteRoute53Record = async (record) => {
+  console.log(record);
   const { resourceRecords, recordName } = this.prepareRecord(record);
 
   const hostedZoneId = await this.getHostedZoneId(recordName, 1);
@@ -127,7 +140,7 @@ exports.updateRoute53Record = async (record) => {
 exports.createRoute53BulkRecord = async (records) => {
   const changes = records.map((record) => {
     const { resourceRecords, recordName } = this.prepareRecord(record);
-
+    
     return {
       Action: "CREATE",
       ResourceRecordSet: {
@@ -137,6 +150,7 @@ exports.createRoute53BulkRecord = async (records) => {
         ResourceRecords: resourceRecords,
       },
     };
+
   });
 
   const params = {
@@ -147,6 +161,7 @@ exports.createRoute53BulkRecord = async (records) => {
   };
 
   const command = new ChangeResourceRecordSetsCommand(params);
+  console.log(command);
   return await this.client.send(command);
 };
 
@@ -159,7 +174,7 @@ exports.getHostedZoneId = async (dnsName, maxItems) => {
   try {
     const command = new ListHostedZonesByNameCommand(params);
     const response = await this.client.send(command);
-
+    console.log('AWSCLIENT',response);
     if (
       response.HostedZones.length > 0 &&
       response.HostedZones[0].Name === `${dnsName}.`
@@ -203,8 +218,38 @@ exports.createHostedZone = async (hostedZoneData) => {
   return await this.client.send(command);
 };
 
+exports.createRoute53RecordFromId = async (hostedZoneId, recordData) => {
+
+  // check for hosted zone
+  try {
+    const recordParams = {
+      ...recordData,
+      HostedZoneId: hostedZoneId,
+    }
+
+    // send to AWS 
+  const response = await this.createRoute53Record(recordParams);
+  
+  console.log('createRoute53RecordFromId', response);
+
+  return {
+    status: response.status,
+    message: response.message
+  };
+
+  } catch (error) {
+    console.log('createRoute53RecordFromId 234: ', error);
+    return {
+      status: error.status,
+      message: error.message
+    }
+  }
+}
+
 exports.createHostedZoneAndRecord = async (hostedZoneData, recordData) => {
+
   const hostedZone = await this.createHostedZone(hostedZoneData);
+
   const hostedZoneId = hostedZone.HostedZone.Id.split("/").pop();
 
   const recordParams = {
@@ -212,5 +257,10 @@ exports.createHostedZoneAndRecord = async (hostedZoneData, recordData) => {
     HostedZoneId: hostedZoneId,
   };
 
-  return await this.createRoute53Record(recordParams);
+  const response = await this.createRoute53Record(recordParams);
+
+  return {
+    response: response,
+    hostedZoneId: hostedZoneId
+  }
 };

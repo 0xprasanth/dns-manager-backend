@@ -8,7 +8,11 @@ const DNSRecordSchema = new mongoose.Schema({
     value: { type: String, required: true},
     ttl: { type: Number, required: true},
     ResoureRecords: {
-        type: [String],
+        Value: [String]
+    },
+    hostedZoneId: {
+        type: String,
+        required: true
     },
     priority: Number,
     wieght: Number,
@@ -21,5 +25,6 @@ const DNSRecordSchema = new mongoose.Schema({
 })
 
 const modal = mongoose.model("dnsrecord", DNSRecordSchema);
+
 
 module.exports = modal;

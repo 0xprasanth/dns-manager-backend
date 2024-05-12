@@ -5,8 +5,17 @@ const cookieParser = require('cookie-parser')
 const authRouter = require('./routes/authRouter')
 const dnsRecordRouter = require('./routes/dnsRecordRouter')
 const bodyParser = require('body-parser')
-const { mongoose } = require('mongoose')
+const { mongoose } = require('mongoose');
+
 require('dotenv').config({path: './.env'});
+
+const swaggerui = require('swagger-ui-express');
+
+const spacs = require('./doc/api')
+
+
+
+
 
 /** DB connections */
 // mongoose.connect(process.env.DB_URL);
@@ -25,8 +34,16 @@ app.use(cookieParser())
 app.disable("x-powered-by")
 app.use(bodyParser.json())
 
+app.use("/api/doc", swaggerui.serve, swaggerui.setup(spacs))
+
 /**
- * api routes
+ * @swagger
+ * /:
+ *   get:
+ *     description: Welcome to swagger-jsdoc!
+ *     responses:
+ *       200:
+ *         description: Returns a mysterious string.
 */
 app.get('/api/test', (req, res) => {
     res.json({

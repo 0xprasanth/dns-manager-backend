@@ -20,3 +20,44 @@ Resource:
 
 https://aws.amazon.com/route53/ 
 
+
+## Installation
+
+You can run this app for testing and devlopment by running the following in your terminal
+
+Make sure you have Nodejs install and version above v18.17.0
+
+```bash
+git clone https://github.com/ptech12/dns-manager-backend
+```
+
+change to project directory and install dependencies
+
+```bash
+cd dns-manager-backend && npm install
+```
+
+
+Create the Environment Variable file and update the contents
+
+```bash
+touch .env
+```
+
+Open the .env in a editor and add the backend-server URL
+```bash
+NODE_ENV="dev"
+JWT_SECRET=
+JWT_SECRET_EXPIRATION="1d"
+DATABASE_URL=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=
+```
+
+
+Start the server 
+```bash
+npm run dev
+```
+

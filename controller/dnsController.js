@@ -4,7 +4,6 @@
  * TODO: handle for record in DB but not on AWS Route53
  */
 
-const { prisma } = require("../db");
 const {
   createHostedZoneAndRecord,
   updateRoute53Record,
@@ -42,7 +41,12 @@ exports.createRecordFromId = async (req, res) => {
       // call create record from HostedZone Id
       const response = await createRoute53RecordFromId(hostedZoneId, record);
 
-      // insert record in DB;
+
+
+      if (response.status === 400) {
+        throw new Error(response.message);
+      } else {
+              // insert record in DB;
       const { resourceRecords, recordName } = prepareRecord(record);
 
       const newRecord = await dnsModal.create({
@@ -53,10 +57,6 @@ exports.createRecordFromId = async (req, res) => {
         value: record.value,
         ResourceRecords: resourceRecords[0],
       });
-
-      if (response.status === 400) {
-        throw new Error(response.message);
-      } else {
         res.json({
           status: response.status,
           message: response.message,
@@ -231,15 +231,24 @@ exports.createBulkRecords = async (req, res) => {
 // Function to get DNS records for a domain
 exports.getRecords = async (req, res) => {
   // Implementation logic to get DNS records
-  const { userId } = req.body;
+  const { hostedZoneId } = req.body;
+  if (!hostedZoneId) {
+    res.status(200).send({
+      "message": "HostZoneId is undefined. Please create a HostedZone"
+    })
+    
+  }
   try {
-    const user = await userModal.where("_id").equals(userId);
+    // const user = await userModal.where("_id").equals(userId);
 
-    const dnsRecords = await dnsModal
-      .where("HostedZoneId")
-      .equals(user.HostedZoneId);
+    const dnsRecords = await dnsModal.find(
+      {hostedZoneId: hostedZoneId}
+    )
 
-    // console.log("211 getRecords", dnsRecords);
+    // console.log("211 getRecords", user);
+    console.log("211 getRecords", hostedZoneId);
+
+    console.log("211 getRecords", dnsRecords);
 
     res.status(200).json({ message: "success", data: dnsRecords });
   } catch (error) {

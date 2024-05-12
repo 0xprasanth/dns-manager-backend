@@ -41,22 +41,20 @@ exports.createRecordFromId = async (req, res) => {
       // call create record from HostedZone Id
       const response = await createRoute53RecordFromId(hostedZoneId, record);
 
-
-
       if (response.status === 400) {
         throw new Error(response.message);
       } else {
-              // insert record in DB;
-      const { resourceRecords, recordName } = prepareRecord(record);
+        // insert record in DB;
+        const { resourceRecords, recordName } = prepareRecord(record);
 
-      const newRecord = await dnsModal.create({
-        hostedZoneId: hostedZoneId,
-        domain: recordName,
-        type: record.type,
-        ttl: parseInt(record.ttl),
-        value: record.value,
-        ResourceRecords: resourceRecords[0],
-      });
+        const newRecord = await dnsModal.create({
+          hostedZoneId: hostedZoneId,
+          domain: recordName,
+          type: record.type,
+          ttl: parseInt(record.ttl),
+          value: record.value,
+          ResourceRecords: resourceRecords[0],
+        });
         res.json({
           status: response.status,
           message: response.message,
@@ -112,6 +110,15 @@ exports.createHostedZoneOnly = async (req, res) => {
             "ns-439.awsdns-54.com.",
             " ns-1972.awsdns-54.co.uk.",
           ],
+        },
+      });
+      await dnsModal.create({
+        hostedZoneId: response,
+        domain: hostedZoneData.name,
+        type: "NS",
+        ttl: 17800,
+        ResourceRecords: {
+          Value: ["ns-89.awsdns-11.com.", "awsdns-hostmaster.amazon.com."],
         },
       });
 
@@ -186,7 +193,6 @@ exports.createRecord = async (req, res) => {
       data: newRecord,
       response,
     });
-
   } catch (err) {
     res.status(500).json({
       message: "Error",
@@ -238,26 +244,23 @@ exports.getRecords = async (req, res) => {
   //     "message": "HostZoneId is undefined. Please create a HostedZone"
   //   })
   //   return; // [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
-    
+
   // }
   try {
     // const user = await userModal.where("_id").equals(userId);
 
-    const dnsRecords = await dnsModal.find(
-      {
-        hostedZoneId: `${hostedZoneId}`
-      }
-    )
+    const dnsRecords = await dnsModal.find({
+      hostedZoneId: `${hostedZoneId}`,
+    });
 
     // console.log("211 getRecords", user);
     console.log("211 getRecords", hostedZoneId);
 
-    console.log("211 getRecords", dnsRecords,       {
-      hostedZoneId:`${hostedZoneId}`
+    console.log("211 getRecords", dnsRecords, {
+      hostedZoneId: `${hostedZoneId}`,
     });
 
     res.status(200).json({ message: "success", data: dnsRecords });
-
   } catch (error) {
     console.log("dc 255", error);
     res.status(500).json({ message: error.message });
@@ -266,23 +269,32 @@ exports.getRecords = async (req, res) => {
 
 exports.updateRecord = async (req, res) => {
   const { recordId } = req.params;
-  const { record } = req.body;
+  const { record, hostedZoneId } = req.body;
 
   // send to route53 and update it in DB
   try {
     // send command to AWS Route 53
-    const awsResponse = await updateRoute53Record(record);
-
+    const awsResponse = await updateRoute53Record(record, hostedZoneId);
+    console.log("update 288", record);
+    console.log("update aws resp", awsResponse);
     // Update record in the DB
-    const updatedRecord = await prisma.dNSRecord.update({
-      where: { id: recordId },
-      data: {
-        domain: record.domain,
-        type: record.type,
-        ttl: parseInt(record.ttl),
-        value: record.value,
-      },
-    });
+    // const updatedRecord = await prisma.dNSRecord.update({
+    //   where: { id: recordId },
+    //   data: {
+    //     domain: record.domain,
+    //     type: record.type,
+    //     ttl: parseInt(record.ttl),
+    //     value: record.value,
+    //   },
+    // });
+    // const updateRecord = await dnsModal.findOneAndUpdate(
+    //   {
+    //     _id: recordId
+    //   },
+    //   {
+    //     domain: record.domain
+    //   }
+    // )
 
     res.status(200).json({
       message: "success",
@@ -306,11 +318,11 @@ exports.deleteRecord = async (req, res) => {
     const awsResponse = await deleteRoute53Record(record);
     // console.log("delete awsResp 291", awsResponse);
     // if record with HostedZone not found, Remove from DB
-    if (awsResponse.status ==  false) {
+    if (awsResponse.status == false) {
       const resp = await dnsModal.deleteOne({
         _id: recordId,
       });
-      console.log('db resp 301', resp);
+      console.log("db resp 301", resp);
       // return success
       res.status(204).send({
         message: `${recordId} was not found\n Removing From Database`,

@@ -114,10 +114,8 @@ exports.deleteRoute53Record = async (record) => {
 
 };
 
-exports.updateRoute53Record = async (record) => {
+exports.updateRoute53Record = async (record, hostedZoneId) => {
   const { resourceRecords, recordName } = this.prepareRecord(record);
-
-  const hostedZoneId = await this.getHostedZoneId(recordName, 1);
 
   const params = {
     HostedZoneId: hostedZoneId,
@@ -135,9 +133,16 @@ exports.updateRoute53Record = async (record) => {
       ],
     },
   };
-
   const command = new ChangeResourceRecordSetsCommand(params);
-  return await this.client.send(command);
+  console.log('param 137', command);
+  try{
+    const resp = await this.client.send(command);
+    console.log('resp 138', resp);
+    return resp;
+  }catch(err){
+    console.log('err 143', err);
+    return err
+  }
 };
 
 exports.createRoute53BulkRecord = async (records) => {
@@ -176,6 +181,7 @@ exports.getHostedZoneId = async (dnsName, maxItems) => {
 
   try {
     const command = new ListHostedZonesByNameCommand(params);
+    console.log('cmd 179', command);
     const response = await this.client.send(command);
     console.log('AWSCLIENT',response);
     if (

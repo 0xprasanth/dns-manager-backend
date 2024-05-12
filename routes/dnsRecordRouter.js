@@ -7,7 +7,7 @@ const dnsController = require("../controller/dnsController");
 /**
  * Router to create a DNS Record
  */
-router.post("/", dnsController.createRecord).get("/", dnsController.getRecords);
+router.post("/create", dnsController.createRecord).post("/", dnsController.getRecords);
 
 router.post('/create-record', dnsController.createRecordFromId)
 

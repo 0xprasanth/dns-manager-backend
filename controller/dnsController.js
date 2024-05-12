@@ -186,6 +186,7 @@ exports.createRecord = async (req, res) => {
       data: newRecord,
       response,
     });
+
   } catch (err) {
     res.status(500).json({
       message: "Error",
@@ -232,27 +233,33 @@ exports.createBulkRecords = async (req, res) => {
 exports.getRecords = async (req, res) => {
   // Implementation logic to get DNS records
   const { hostedZoneId } = req.body;
-  if (!hostedZoneId) {
-    res.status(200).send({
-      "message": "HostZoneId is undefined. Please create a HostedZone"
-    })
+  // if (!hostedZoneId) {
+  //   res.status(200).send({
+  //     "message": "HostZoneId is undefined. Please create a HostedZone"
+  //   })
+  //   return; // [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
     
-  }
+  // }
   try {
     // const user = await userModal.where("_id").equals(userId);
 
     const dnsRecords = await dnsModal.find(
-      {hostedZoneId: hostedZoneId}
+      {
+        hostedZoneId: `${hostedZoneId}`
+      }
     )
 
     // console.log("211 getRecords", user);
     console.log("211 getRecords", hostedZoneId);
 
-    console.log("211 getRecords", dnsRecords);
+    console.log("211 getRecords", dnsRecords,       {
+      hostedZoneId:`${hostedZoneId}`
+    });
 
     res.status(200).json({ message: "success", data: dnsRecords });
+
   } catch (error) {
-    console.log("dc 215", error);
+    console.log("dc 255", error);
     res.status(500).json({ message: error.message });
   }
 };

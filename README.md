@@ -12,6 +12,10 @@ Purpose: Develop a web application to provide a central dashboard for automating
  - Establish backend API endpoints connecting the UI to the DNS system on AWS Route 53.
   - Implement API calls for CRUD operations on DNS records.
 
+# API Routes
+
+**[View API Routes Doc](./doc/README.md)**
+
 Resource: 
 
 https://aws.amazon.com/route53/ 

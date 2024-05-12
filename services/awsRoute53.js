@@ -86,7 +86,10 @@ exports.deleteRoute53Record = async (record) => {
 
   if(hostedZoneId.status === "error"){
     console.log(hostedZoneId.message);
-    return hostedZoneId.message
+    return {
+      status: false,
+      message: hostedZoneId.message
+    }
   }
 
   const params = {
@@ -107,8 +110,8 @@ exports.deleteRoute53Record = async (record) => {
   };
 
   const command = new ChangeResourceRecordSetsCommand(params);
-
   return await this.client.send(command);
+
 };
 
 exports.updateRoute53Record = async (record) => {

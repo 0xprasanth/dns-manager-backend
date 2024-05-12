@@ -36,7 +36,7 @@ exports.createRecordFromId = async (req, res) => {
       .equals(record.type);
 
     if (dns.length >= 1) {
-      throw new Error("duplicte")
+      throw new Error("duplicte");
     } else {
       console.log("send to aws");
       // call create record from HostedZone Id
@@ -51,7 +51,7 @@ exports.createRecordFromId = async (req, res) => {
         type: record.type,
         ttl: parseInt(record.ttl),
         value: record.value,
-        ResourceRecords: resourceRecords[0]
+        ResourceRecords: resourceRecords[0],
       });
 
       if (response.status === 400) {
@@ -77,6 +77,8 @@ exports.createHostedZoneOnly = async (req, res) => {
   const { hostedZoneData } = req.body;
   const { userId } = req.params;
 
+  console.log("log hzdata 80", req.body);
+
   try {
     // check if hostedzone already exists
 
@@ -92,11 +94,6 @@ exports.createHostedZoneOnly = async (req, res) => {
         success: false,
         message: "User does not exists",
       });
-    } else if(isUser.HostedZoneId){
-      res.status(200).send({
-        success: false,
-        message: "HostedZone already exists",
-      });
     } else {
       // console.log('else 96', isUser);
 
@@ -109,12 +106,13 @@ exports.createHostedZoneOnly = async (req, res) => {
         type: "NS",
         ttl: 17800,
         ResourceRecords: {
-          Value: ["ns-896.awsdns-48.net.",
+          Value: [
+            "ns-896.awsdns-48.net.",
             "ns-1190.awsdns-20.org.",
             "ns-439.awsdns-54.com.",
-           " ns-1972.awsdns-54.co.uk."
-          ]
-        }
+            " ns-1972.awsdns-54.co.uk.",
+          ],
+        },
       });
 
       // const user = await userModal.findOneAndUpdate(
@@ -237,9 +235,11 @@ exports.getRecords = async (req, res) => {
   try {
     const user = await userModal.where("_id").equals(userId);
 
-    const dnsRecords = await dnsModal.where("HostedZoneId").equals(user.HostedZoneId)
+    const dnsRecords = await dnsModal
+      .where("HostedZoneId")
+      .equals(user.HostedZoneId);
 
-    console.log("211 getRecords", dnsRecords);
+    // console.log("211 getRecords", dnsRecords);
 
     res.status(200).json({ message: "success", data: dnsRecords });
   } catch (error) {
@@ -284,19 +284,25 @@ exports.deleteRecord = async (req, res) => {
   try {
     // get the RECORD by ID
     const record = await dnsModal.findById(recordId);
+    console.log("delete record 288", record);
 
     // send command to AWS
     const awsResponse = await deleteRoute53Record(record);
+    // console.log("delete awsResp 291", awsResponse);
+    // if record with HostedZone not found, Remove from DB
+    if (awsResponse.status ==  false) {
+      const resp = await dnsModal.deleteOne({
+        _id: recordId,
+      });
+      console.log('db resp 301', resp);
+      // return success
+      res.status(204).send({
+        message: `${recordId} was not found\n Removing From Database`,
+        db: resp,
+      });
+    }
   } catch (err) {
     console.log(err);
-    const resp = await dnsModal.deleteOne({
-      _id: recordId,
-    });
-
-    // return success
-    res.status(204).json({
-      message: `${recordId} was not found\n Removing From Database`,
-      db: resp,
-    });
+    console.log("delete record 297", err);
   }
 };

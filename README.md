@@ -16,12 +16,12 @@ Purpose: Develop a web application to provide a central dashboard for automating
 
 **[View API Routes Doc](./doc/README.md)**
 
-Resource: 
+## Resources: 
 
-https://aws.amazon.com/route53/ 
+- **https://aws.amazon.com/route53/**
+- **https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/route-53/**
 
-
-## Installation
+##Installation
 
 You can run this app for testing and devlopment by running the following in your terminal
 

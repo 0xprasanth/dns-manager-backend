@@ -31,6 +31,15 @@ const DNSRecordSchema = new mongoose.Schema({
     domain: String,
     type: String,
     ttl: Number,    
+    priority: Number,
+    weight: Number,
+    port: Number,
+    target: String,
+    keyTag: Number,
+    algorithm: Number,
+    digestType: Number,
+    digest: String,
+    value: String,
     ResourceRecords: {
         Value: [String]
     }

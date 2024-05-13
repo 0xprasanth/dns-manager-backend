@@ -117,8 +117,8 @@ exports.deleteRoute53Record = async (record) => {
 exports.updateRoute53Record = async (record, hostedZoneId) => {
   const { resourceRecords, recordName } = this.prepareRecord(record);
 
-  console.log('120 aws update', resourceRecords, recordName);
-  
+  console.log('120 aws update', resourceRecords, recordName, record);
+
   const params = {
     HostedZoneId: hostedZoneId,
     ChangeBatch: {
@@ -136,6 +136,7 @@ exports.updateRoute53Record = async (record, hostedZoneId) => {
     },
   };
   const command = new ChangeResourceRecordSetsCommand(params);
+
   console.log('param 137', command);
   try{
     const resp = await this.client.send(command);

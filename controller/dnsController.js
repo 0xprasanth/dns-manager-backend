@@ -53,8 +53,17 @@ exports.createRecordFromId = async (req, res) => {
           type: record.type,
           ttl: parseInt(record.ttl),
           value: record.value,
+          priority: record?.priority || 0,
+          weight:  record?.weight || 0,
+          port:    record?.port || 0,
+          target:  record?.target || "",
+          keyTag:  record?.keyTag || 0,
+          algorithm: record?.priority || 0,
+          digestType: record?.digestType || 0,
+          digest: record?.digest || '',
           ResourceRecords: resourceRecords[0],
         });
+
         res.json({
           status: response.status,
           message: response.message,
@@ -103,6 +112,7 @@ exports.createHostedZoneOnly = async (req, res) => {
         domain: hostedZoneData.name,
         type: "NS",
         ttl: 17800,
+        value:  "ns-896.awsdns-48.net. ,ns-1190.awsdns-20.org. , ns-439.awsdns-54.com. , ns-1972.awsdns-54.co.uk.",
         ResourceRecords: {
           Value: [
             "ns-896.awsdns-48.net.",
@@ -112,11 +122,13 @@ exports.createHostedZoneOnly = async (req, res) => {
           ],
         },
       });
+
       await dnsModal.create({
         hostedZoneId: response,
         domain: hostedZoneData.name,
         type: "NS",
         ttl: 17800,
+        value: "ns-89.awsdns-11.com., awsdns-hostmaster.amazon.com.",
         ResourceRecords: {
           Value: ["ns-89.awsdns-11.com.", "awsdns-hostmaster.amazon.com."],
         },
@@ -254,11 +266,11 @@ exports.getRecords = async (req, res) => {
     });
 
     // console.log("211 getRecords", user);
-    console.log("211 getRecords", hostedZoneId);
+    console.log("269 getRecords", hostedZoneId);
 
-    console.log("211 getRecords", dnsRecords, {
-      hostedZoneId: `${hostedZoneId}`,
-    });
+    // console.log("211 getRecords", dnsRecords, {
+    //   hostedZoneId: `${hostedZoneId}`,
+    // });
 
     res.status(200).json({ message: "success", data: dnsRecords });
   } catch (error) {
@@ -274,9 +286,9 @@ exports.updateRecord = async (req, res) => {
   // send to route53 and update it in DB
   try {
     // send command to AWS Route 53
-    const awsResponse = await updateRoute53Record(record, hostedZoneId);
+    const response = await updateRoute53Record(record, hostedZoneId);
     console.log("update 288", record);
-    console.log("update aws resp", awsResponse);
+    console.log("update aws resp", response);
     // Update record in the DB
     // const updatedRecord = await prisma.dNSRecord.update({
     //   where: { id: recordId },
@@ -288,23 +300,32 @@ exports.updateRecord = async (req, res) => {
     //   },
     // });
     const { resourceRecords, recordName } = prepareRecord(record);
+
     const updateRecord = await dnsModal.findOneAndUpdate(
       {
         _id: recordId
       },
       {
-        domain: record.domain,
-        type: record.type,
-        ttl: record.ttl,
-        value: record.value,
-        ResourceRecords: resourceRecords[0],
-        }
-    )
+      hostedZoneId: hostedZoneId,
+      domain: recordName,
+      type: record.type,
+      ttl: parseInt(record.ttl),
+      value: record.value,
+      priority: record?.priority || 0,
+      weight:  record?.weight || 0,
+      port:    record?.port || 0,
+      target:  record?.target || "",
+      keyTag:  record?.keyTag || 0,
+      algorithm: record?.priority || 0,
+      digestType: record?.digestType || 0,
+      digest: record?.digest || '',
+      ResourceRecords: resourceRecords[0],
+    });
 
-    res.status(200).json({
-      message: "success",
+    res.json({
+      status: 204,
+      message: `${record.domain} Updated`,
       data: updateRecord,
-      awsResponse: awsResponse,
     });
     
   } catch (error) {

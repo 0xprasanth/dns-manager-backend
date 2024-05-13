@@ -151,7 +151,7 @@ exports.updateRoute53Record = async (record, hostedZoneId) => {
 exports.createRoute53BulkRecord = async (records, hostedZoneId) => {
 
   const changes = records.records.map((record) => {
-    
+
     const { resourceRecords, recordName } = this.prepareRecord(record);
     
     return {
@@ -279,14 +279,16 @@ exports.createRoute53RecordFromId = async (hostedZoneId, recordData) => {
   console.log('createRoute53RecordFromId', response);
 
   return {
-    status: response.status,
-    message: response.message
+    status: 'success',
+    message: response.message,
+    code: '200'
   };
 
   } catch (error) {
     console.log('createRoute53RecordFromId 234: ', error);
     return {
-      status: error.status,
+      status: 'failed',
+      code: 400,
       message: error.message
     }
   }

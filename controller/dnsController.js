@@ -34,9 +34,13 @@ exports.createRecordFromId = async (req, res) => {
       .where("type")
       .equals(record.type);
 
-    if (dns.length >= 1) {
-      throw new Error("duplicate");
-    } else {
+    if (dns.length >= 1) 
+    {
+      // throw error if domain exist
+      // it will be GTE to 1
+      throw new Error(`${record.domain} domain already exits`);
+    } 
+    else {
       console.log("send to aws");
       // call create record from HostedZone Id
       const response = await createRoute53RecordFromId(hostedZoneId, record);
@@ -68,15 +72,17 @@ exports.createRecordFromId = async (req, res) => {
         res.json({
           status: response.status,
           message: response.message,
+          code: response.code,
           data: newRecord,
         });
       }
     }
   } catch (err) {
     console.log("crfid 52", err);
-    res.json({
-      status: 400,
+    res.status(400).json({
+      status: "failed",
       message: err.message,
+      code: 400
     });
   }
 };
@@ -220,17 +226,20 @@ exports.createRecord = async (req, res) => {
 /** function to create bulk records */
 exports.createBulkRecords = async (req, res) => {
   // console.log(req.body);
+  console.log(req);
   const { records, hostedZoneId } = req.body;
-
+console.log(records);
   try{
-      const awsResponse = await createRoute53BulkRecord(records, hostedZoneId);
+      // const awsResponse = await createRoute53BulkRecord(records, hostedZoneId);
 
       const newRecords = async (record) => {
         console.log(record);
 
+        const awsResponse = createRoute53RecordFromId(hostedZoneId, record);
+
         const { resourceRecords, recordName } = prepareRecord(record);
 
-        await dnsModal.create({
+        const newrecord = await dnsModal.create({
           hostedZoneId: hostedZoneId,
           domain: recordName,
           type: record.type,
@@ -246,14 +255,17 @@ exports.createBulkRecords = async (req, res) => {
           digest: record?.digest || "",
           ResourceRecords: resourceRecords[0],
         });
+        console.log('bulk 251', newrecord);
 
         res.status(201).json({
           message: "success",
-          data: newRecords,
+          data: newrecord,
           awsResponse: awsResponse,
         });
+
       };
     } catch (err) {
+
     console.log(err);
     res.status(500).json({
       status: "Error",

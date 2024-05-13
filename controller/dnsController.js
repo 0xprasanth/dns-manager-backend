@@ -35,7 +35,7 @@ exports.createRecordFromId = async (req, res) => {
       .equals(record.type);
 
     if (dns.length >= 1) {
-      throw new Error("duplicte");
+      throw new Error("duplicate");
     } else {
       console.log("send to aws");
       // call create record from HostedZone Id
@@ -44,6 +44,7 @@ exports.createRecordFromId = async (req, res) => {
       if (response.status === 400) {
         throw new Error(response.message);
       } else {
+        
         // insert record in DB;
         const { resourceRecords, recordName } = prepareRecord(record);
 
@@ -54,13 +55,13 @@ exports.createRecordFromId = async (req, res) => {
           ttl: parseInt(record.ttl),
           value: record.value,
           priority: record?.priority || 0,
-          weight:  record?.weight || 0,
-          port:    record?.port || 0,
-          target:  record?.target || "",
-          keyTag:  record?.keyTag || 0,
+          weight: record?.weight || 0,
+          port: record?.port || 0,
+          target: record?.target || "",
+          keyTag: record?.keyTag || 0,
           algorithm: record?.priority || 0,
           digestType: record?.digestType || 0,
-          digest: record?.digest || '',
+          digest: record?.digest || "",
           ResourceRecords: resourceRecords[0],
         });
 
@@ -112,7 +113,8 @@ exports.createHostedZoneOnly = async (req, res) => {
         domain: hostedZoneData.name,
         type: "NS",
         ttl: 17800,
-        value:  "ns-896.awsdns-48.net. ,ns-1190.awsdns-20.org. , ns-439.awsdns-54.com. , ns-1972.awsdns-54.co.uk.",
+        value:
+          "ns-896.awsdns-48.net. ,ns-1190.awsdns-20.org. , ns-439.awsdns-54.com. , ns-1972.awsdns-54.co.uk.",
         ResourceRecords: {
           Value: [
             "ns-896.awsdns-48.net.",
@@ -218,27 +220,40 @@ exports.createRecord = async (req, res) => {
 /** function to create bulk records */
 exports.createBulkRecords = async (req, res) => {
   // console.log(req.body);
-  const { records } = req.body;
+  const { records, hostedZoneId } = req.body;
 
-  try {
-    const awsResponse = await createRoute53BulkRecord(records);
+  try{
+      const awsResponse = await createRoute53BulkRecord(records, hostedZoneId);
 
-    const newRecords = async (record) => {
-      console.log(record);
-      await dnsModal.create({
-        domain: record.domain,
-        type: record.type,
-        value: record.value,
-        hostedZoneData: record.hostedZoneData.name,
-      });
+      const newRecords = async (record) => {
+        console.log(record);
 
-      res.status(201).json({
-        message: "success",
-        data: newRecords,
-        awsResponse: awsResponse,
-      });
-    };
-  } catch (err) {
+        const { resourceRecords, recordName } = prepareRecord(record);
+
+        await dnsModal.create({
+          hostedZoneId: hostedZoneId,
+          domain: recordName,
+          type: record.type,
+          ttl: parseInt(record.ttl),
+          value: record.value,
+          priority: record?.priority || 0,
+          weight: record?.weight || 0,
+          port: record?.port || 0,
+          target: record?.target || "",
+          keyTag: record?.keyTag || 0,
+          algorithm: record?.priority || 0,
+          digestType: record?.digestType || 0,
+          digest: record?.digest || "",
+          ResourceRecords: resourceRecords[0],
+        });
+
+        res.status(201).json({
+          message: "success",
+          data: newRecords,
+          awsResponse: awsResponse,
+        });
+      };
+    } catch (err) {
     console.log(err);
     res.status(500).json({
       status: "Error",
@@ -303,31 +318,31 @@ exports.updateRecord = async (req, res) => {
 
     const updateRecord = await dnsModal.findOneAndUpdate(
       {
-        _id: recordId
+        _id: recordId,
       },
       {
-      hostedZoneId: hostedZoneId,
-      domain: recordName,
-      type: record.type,
-      ttl: parseInt(record.ttl),
-      value: record.value,
-      priority: record?.priority || 0,
-      weight:  record?.weight || 0,
-      port:    record?.port || 0,
-      target:  record?.target || "",
-      keyTag:  record?.keyTag || 0,
-      algorithm: record?.priority || 0,
-      digestType: record?.digestType || 0,
-      digest: record?.digest || '',
-      ResourceRecords: resourceRecords[0],
-    });
+        hostedZoneId: hostedZoneId,
+        domain: recordName,
+        type: record.type,
+        ttl: parseInt(record.ttl),
+        value: record.value,
+        priority: record?.priority || 0,
+        weight: record?.weight || 0,
+        port: record?.port || 0,
+        target: record?.target || "",
+        keyTag: record?.keyTag || 0,
+        algorithm: record?.priority || 0,
+        digestType: record?.digestType || 0,
+        digest: record?.digest || "",
+        ResourceRecords: resourceRecords[0],
+      }
+    );
 
     res.json({
       status: 204,
       message: `${record.domain} Updated`,
       data: updateRecord,
     });
-    
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

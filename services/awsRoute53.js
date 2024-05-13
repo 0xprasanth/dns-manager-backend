@@ -148,8 +148,10 @@ exports.updateRoute53Record = async (record, hostedZoneId) => {
   }
 };
 
-exports.createRoute53BulkRecord = async (records) => {
-  const changes = records.map((record) => {
+exports.createRoute53BulkRecord = async (records, hostedZoneId) => {
+
+  const changes = records.records.map((record) => {
+    
     const { resourceRecords, recordName } = this.prepareRecord(record);
     
     return {
@@ -165,7 +167,7 @@ exports.createRoute53BulkRecord = async (records) => {
   });
 
   const params = {
-    HostedZoneId: process.env.HOSTED_ZONE_ID,
+    HostedZoneId: hostedZoneId,
     ChangeBatch: {
       Changes: changes,
     },
@@ -173,7 +175,23 @@ exports.createRoute53BulkRecord = async (records) => {
 
   const command = new ChangeResourceRecordSetsCommand(params);
   console.log(command);
-  return await this.client.send(command);
+
+  try {
+    const response = await this.client.send(command);
+    console.log('createRoute53RecordFromId', response);
+
+    return {
+      status: response.status,
+      message: response.message
+    };
+  
+    } catch (error) {
+      console.log('createRoute53RecordBulk 188: ', error);
+      return {
+        status: error.status,
+        message: error.message
+      }
+    }
 };
 
 exports.getHostedZoneId = async (dnsName, maxItems) => {

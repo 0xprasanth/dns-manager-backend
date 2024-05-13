@@ -120,7 +120,7 @@ POST /create-record/
 ### Update Record 
 
 ```
-PATCH /:recordId
+PUT /:recordId
 ```
 ### Parameters
 | Name | Description |

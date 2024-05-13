@@ -287,20 +287,26 @@ exports.updateRecord = async (req, res) => {
     //     value: record.value,
     //   },
     // });
-    // const updateRecord = await dnsModal.findOneAndUpdate(
-    //   {
-    //     _id: recordId
-    //   },
-    //   {
-    //     domain: record.domain
-    //   }
-    // )
+    const { resourceRecords, recordName } = prepareRecord(record);
+    const updateRecord = await dnsModal.findOneAndUpdate(
+      {
+        _id: recordId
+      },
+      {
+        domain: record.domain,
+        type: record.type,
+        ttl: record.ttl,
+        value: record.value,
+        ResourceRecords: resourceRecords[0],
+        }
+    )
 
     res.status(200).json({
       message: "success",
-      data: updatedRecord,
+      data: updateRecord,
       awsResponse: awsResponse,
     });
+    
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

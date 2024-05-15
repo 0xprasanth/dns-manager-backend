@@ -17,6 +17,7 @@ const spacs = require('./doc/api')
 
 
 
+
 /** DB connections */
 // mongoose.connect(process.env.DB_URL);
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Connected to MongoDB'))
@@ -31,8 +32,11 @@ app.use(cors({
 }))
 // app.use(dotenv());
 app.use(cookieParser())
+
 app.disable("x-powered-by")
+
 app.use(bodyParser.json())
+
 
 app.use("/api/doc", swaggerui.serve, swaggerui.setup(spacs))
 
@@ -62,7 +66,5 @@ app.use(function(req, res, next) {
 app.use('/api/v1', authRouter);
 
 app.use('/api/v1/domain/records', dnsRecordRouter);
-
-
 
 module.exports = app;

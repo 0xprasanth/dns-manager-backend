@@ -4,24 +4,33 @@
  * TODO: handle for record in DB but not on AWS Route53
  */
 
-const {
-  createHostedZoneAndRecord,
-  updateRoute53Record,
-  deleteRoute53Record,
-  createRoute53BulkRecord,
-  createRoute53RecordFromId,
-  prepareRecord,
-  createHostedZoneForClient,
-} = require("../services/awsRoute53");
+// AWS Route53 Services Logic
+// const {
+//   createHostedZoneAndRecord,
+//   updateRoute53Record,
+//   deleteRoute53Record,
+//   createRoute53BulkRecord,
+//   createRoute53RecordFromId,
+//   prepareRecord,
+//   createHostedZoneForClient,
+// } = require("../services/awsRoute53");
+
+
 const dnsModal = require("../model/DNSRecord");
 const userModal = require("../model/Users");
+const { prepareRecord } = require("../services/awsRoute53");
+const returnHash = require("../utils/generateToken");
+
+
 
 exports.createRecordFromId = async (req, res) => {
   /**
    * hostedZoneId: where to create Record
    */
   // console.log('body', req.body);
+
   const { record, hostedZoneId } = req.body;
+
 
   // console.log(record);
   // console.log(hostedZoneId);
@@ -41,17 +50,16 @@ exports.createRecordFromId = async (req, res) => {
       throw new Error(`${record.domain} domain already exits`);
     } 
     else {
-      console.log("send to aws");
+      // console.log("send to aws");
+
       // call create record from HostedZone Id
-      const response = await createRoute53RecordFromId(hostedZoneId, record);
+      // * uncomment to connect to aws
+      // const response = await createRoute53RecordFromId(hostedZoneId, record);
 
-      if (response.status === 400) {
-        throw new Error(response.message);
-      } else {
-        
-        // insert record in DB;
-        const { resourceRecords, recordName } = prepareRecord(record);
-
+      // prepare record in AWS Route53 formate
+      const { resourceRecords, recordName } = prepareRecord(record);
+      
+      // insert record in DB;
         const newRecord = await dnsModal.create({
           hostedZoneId: hostedZoneId,
           domain: recordName,
@@ -70,13 +78,13 @@ exports.createRecordFromId = async (req, res) => {
         });
 
         res.json({
-          status: response.status,
-          message: response.message,
-          code: response.code,
+          status: 'success',
+          message: `${recordName} created successfully`,
+          code: 200,
           data: newRecord,
         });
       }
-    }
+
   } catch (err) {
     console.log("crfid 52", err);
     res.status(400).json({
@@ -88,6 +96,10 @@ exports.createRecordFromId = async (req, res) => {
 };
 
 exports.createHostedZoneOnly = async (req, res) => {
+  // hostedZoneData: {
+    // name:
+  // }
+
   const { hostedZoneData } = req.body;
   const { userId } = req.params;
 
@@ -95,23 +107,21 @@ exports.createHostedZoneOnly = async (req, res) => {
 
   try {
     // check if hostedzone already exists
-
     // check if such user exist
     const isUser = await userModal.findOne({ _id: userId });
 
-    // check if domain already exist
-    // const isDomain = await
 
     if (!isUser) {
-      // isUser = false
+      // isUser does not exist
       res.status(200).send({
         success: false,
         message: "User does not exists",
       });
+ 
     } else {
-      // console.log('else 96', isUser);
-
-      const response = await createHostedZoneForClient(hostedZoneData);
+      // AWS Function CALL
+      // const response = await createHostedZoneForClient(hostedZoneData);
+      const response = returnHash();
 
       // create record
       const db = await dnsModal.create({
@@ -154,6 +164,7 @@ exports.createHostedZoneOnly = async (req, res) => {
       // use save()
 
       isUser.HostedZoneId = db.hostedZoneId;
+
       const user = await isUser.save();
 
       // console.log("log 82 user", user);
@@ -163,7 +174,7 @@ exports.createHostedZoneOnly = async (req, res) => {
 
       res.status(200).send({
         success: true,
-        message: "HostedZone Created",
+        message: "Hosted Zone Created",
         user: user,
       });
     }
@@ -174,56 +185,9 @@ exports.createHostedZoneOnly = async (req, res) => {
     });
   }
 };
-/** function to create record */
-exports.createRecord = async (req, res) => {
-  /**
-   * hostedZoneData: HostedZoneDomainName
-   * Domain Name: record[]
-   */
-  const { hostedZoneData, record } = req.body;
-
-  // creating HostedZone along with RECORD
-  try {
-    // wait for response from AWS
-    const response = await createHostedZoneAndRecord(hostedZoneData, record);
-
-    // save new record in DB
-    // const newRecord = await prisma.dNSRecord.create({
-    //   data: {
-    //     domain: record.domain,
-    // type: record.type,
-    // ttl: parseInt(record.ttl),
-    // value: record.value,
-    //   },
-    // });
-    console.log("create", response);
-    const { resourceRecords, recordName } = prepareRecord(record);
-    // const newRecord = undefined
-    const newRecord = await dnsModal.create({
-      domain: recordName,
-      type: record.type,
-      ttl: parseInt(record.ttl),
-      value: record.value,
-      ResoureRecords: resourceRecords,
-      hostedZoneId: response.hostedZoneId,
-    });
-
-    res.status(201).json({
-      message: "success",
-      data: newRecord,
-      response,
-    });
-  } catch (err) {
-    res.status(500).json({
-      message: "Error",
-      data: err.message,
-      code: err.code,
-    });
-    console.log(err);
-  }
-};
 
 /** function to create bulk records */
+/** not used for bulk records */
 exports.createBulkRecords = async (req, res) => {
   // console.log(req.body);
   console.log(req);
@@ -278,6 +242,7 @@ console.log(records);
 exports.getRecords = async (req, res) => {
   // Implementation logic to get DNS records
   const { hostedZoneId } = req.body;
+
   // if (!hostedZoneId) {
   //   res.status(200).send({
   //     "message": "HostZoneId is undefined. Please create a HostedZone"
@@ -306,6 +271,8 @@ exports.getRecords = async (req, res) => {
   }
 };
 
+
+
 exports.updateRecord = async (req, res) => {
   const { recordId } = req.params;
   const { record, hostedZoneId } = req.body;
@@ -313,9 +280,9 @@ exports.updateRecord = async (req, res) => {
   // send to route53 and update it in DB
   try {
     // send command to AWS Route 53
-    const response = await updateRoute53Record(record, hostedZoneId);
+    // const response = await updateRoute53Record(record, hostedZoneId);
     console.log("update 288", record);
-    console.log("update aws resp", response);
+    // console.log("update aws resp", response);
     // Update record in the DB
     // const updatedRecord = await prisma.dNSRecord.update({
     //   where: { id: recordId },
@@ -326,6 +293,7 @@ exports.updateRecord = async (req, res) => {
     //     value: record.value,
     //   },
     // });
+
     const { resourceRecords, recordName } = prepareRecord(record);
 
     const updateRecord = await dnsModal.findOneAndUpdate(
@@ -369,22 +337,25 @@ exports.deleteRecord = async (req, res) => {
     console.log("delete record 288", record);
 
     // send command to AWS
-    const awsResponse = await deleteRoute53Record(record);
+    // const awsResponse = await deleteRoute53Record(record);
     // console.log("delete awsResp 291", awsResponse);
     // if record with HostedZone not found, Remove from DB
-    if (awsResponse.status == false) {
-      const resp = await dnsModal.deleteOne({
-        _id: recordId,
-      });
-      console.log("db resp 301", resp);
-      // return success
-      res.status(204).send({
-        message: `${recordId} was not found\n Removing From Database`,
-        db: resp,
-      });
-    }
+
+    const resp = await dnsModal.deleteOne({
+      _id: recordId,
+    });
+    console.log("db resp 301", resp);
+    // return success
+    res.status(204).send({
+      message: `${recordId} was not found\n Removing From Database`,
+      db: resp,
+    });
+
   } catch (err) {
     console.log(err);
     console.log("delete record 297", err);
+    res.status(500).send({
+      message: err.message
+    })
   }
 };

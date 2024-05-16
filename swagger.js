@@ -18,13 +18,13 @@ const options = {
       version: "1.0.0",
     },
     servers: [
+        {
+          url: "https://dns-manager-backend-production.up.railway.app/api/v1",
+          description: "Live Server",
+        },
       {
         url: "http://localhost:3001/api/v1",
         description: "Local server",
-      },
-      {
-        url: "Liver Server ",
-        description: "Loading...",
       },
     ],
   },

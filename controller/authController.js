@@ -1,8 +1,6 @@
 const { default: mongoose } = require("mongoose");
 const userModel = require("../model/Users");
 
-const { prisma } = require("../db");
-
 const {
   signToken,
   hashedPassword,

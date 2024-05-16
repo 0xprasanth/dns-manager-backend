@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "jwt" : "node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\" "
   },
   "repository": {
     "type": "git",

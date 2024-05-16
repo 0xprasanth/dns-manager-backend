@@ -171,7 +171,7 @@ exports.createHostedZoneOnly = async (req, res) => {
       // console.log("log 82 db", db);
       // console.log("log 82 user", isUser);
       // console.log("log 82 user save", user);
-
+      user.password = undefined
       res.status(200).send({
         success: true,
         message: "Hosted Zone Created",

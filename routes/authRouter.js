@@ -65,7 +65,7 @@ router.post("/signup", authController.signup)
      *           schema:
      *            type: object
      *            required:
-     *              - username
+     *              - email
      *              - password
      *            properties:
      *              email:
